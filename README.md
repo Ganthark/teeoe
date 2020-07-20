@@ -4,7 +4,7 @@ Launch a script and redirect stderr and stdout to log files while still showing 
 Any script with any number of parameters can be launched, stderr will be redirected to err.log (or specified path with -e) and stdout will be redirected to out.log (or specified path with -o). All output will still show on terminal.
 
 # Usage:  
-`./teeoe: [OPTION] script` or `teeoe: [OPTION] script`  
+`./teeoe [OPTION] script` or `teeoe [OPTION] script`  
 A script must be provided.  
 
 # Options:  
