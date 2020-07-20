@@ -1,10 +1,5 @@
 #!/bin/bash
 
-#For Calvin's PC 'sorghum' which system language is english
-#Do not use it if you are not in this case
-export LANG=en_US.utf-8
-export LC_ALL=en_US.utf-8
-
 print_usage() {
   printf '\nUsage: %s: [OPTION] script\n' $0
   echo "A script must be provided."
@@ -29,7 +24,6 @@ done
 echo ""
 
 if [ "$#" -lt 1 ]
-#if [ "$#" -gt 5 ] || [ "$#" -lt 1 ]
 then
     echo "Illegal number of parameters."
     print_usage
