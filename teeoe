@@ -1,0 +1,50 @@
+#!/bin/bash
+
+#For Calvin's PC 'sorghum' which system language is english
+#Do not use it if you are not in this case
+export LANG=en_US.utf-8
+export LC_ALL=en_US.utf-8
+
+print_usage() {
+  printf '\nUsage: %s: [OPTION] script\n' $0
+  echo "A script must be provided."
+  echo "OPTIONS:"
+  echo "	-e 	Filename for the stderr redirection (default: ./err.log)"
+  echo "	-o 	Filename for the stdout redirection (default: ./out.log)"
+}
+
+SCRIPT=false
+ERRLOG="./err.log"
+OUTLOG="./out.log"
+
+while getopts ':e:o:' flag; do
+  case "${flag}" in
+    e) ERRLOG=${OPTARG} ;;
+    o) OUTLOG=${OPTARG} ;;
+    ?) print_usage
+       exit 1 ;;
+  esac
+done
+
+echo ""
+
+if [ "$#" -lt 1 ]
+#if [ "$#" -gt 5 ] || [ "$#" -lt 1 ]
+then
+    echo "Illegal number of parameters."
+    print_usage
+    exit 1
+fi
+
+shift $((OPTIND-1))
+
+if [ "$#" -lt 1 ]
+then
+    echo "Missing script parameter."
+    print_usage
+    exit 1
+fi
+
+SCRIPT=$@
+
+($SCRIPT | tee $OUTLOG) 3>&1 1>&2 2>&3 | tee $ERRLOG
