@@ -1,27 +1,28 @@
 #!/bin/bash
-
 print_usage() {
   printf '\nUsage: %s: [OPTION] script\n' $0
   echo "A script must be provided."
   echo "OPTIONS:"
-  echo "	-e 	Filename for the stderr redirection (default: ./err.log)"
-  echo "	-o 	Filename for the stdout redirection (default: ./out.log)"
+  echo "        -e      Filename for the stderr redirection (default: ./<cmd>.err)"
+  echo "        -o      Filename for the stdout redirection (default: ./<cmd>.out)"
+  echo "        -l      Directory to write log files into (default: current directory)"
 }
 
 SCRIPT=false
-ERRLOG="./err.log"
-OUTLOG="./out.log"
+ERRLOG=""
+OUTLOG=""
+LOGDIR=""
 
-while getopts ':e:o:' flag; do
+
+while getopts ':e:o:l:' flag; do
   case "${flag}" in
     e) ERRLOG=${OPTARG} ;;
     o) OUTLOG=${OPTARG} ;;
+    l) LOGDIR=${OPTARG} ;;
     ?) print_usage
        exit 1 ;;
   esac
 done
-
-echo ""
 
 if [ "$#" -lt 1 ]
 then
@@ -29,16 +30,29 @@ then
     print_usage
     exit 1
 fi
-
 shift $((OPTIND-1))
-
 if [ "$#" -lt 1 ]
 then
     echo "Missing script parameter."
     print_usage
     exit 1
 fi
-
 SCRIPT=$@
+
+# Derive base name from command: ./scripts/example.sh -> example, grep -> grep
+CMD_BASE=$(basename "$1")
+CMD_BASE="${CMD_BASE%.*}"
+
+# Resolve directory prefix
+if [ -n "$LOGDIR" ]; then
+  mkdir -p "$LOGDIR" || { echo "Cannot create log directory: $LOGDIR"; exit 1; }
+  DIR_PREFIX="${LOGDIR%/}/"
+else
+  DIR_PREFIX="./"
+fi
+
+# Only apply defaults if -e/-o were not explicitly set
+[ -z "$OUTLOG" ] && OUTLOG="${DIR_PREFIX}${CMD_BASE}.out"
+[ -z "$ERRLOG" ] && ERRLOG="${DIR_PREFIX}${CMD_BASE}.err"
 
 ($SCRIPT | tee $OUTLOG) 3>&1 1>&2 2>&3 | tee $ERRLOG
