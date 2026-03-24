@@ -37,7 +37,7 @@ then
     print_usage
     exit 1
 fi
-SCRIPT=$@
+CMD_ARGS=("$@")
 
 # Derive base name from command: ./scripts/example.sh -> example, grep -> grep
 CMD_BASE=$(basename "$1")
@@ -55,4 +55,4 @@ fi
 [ -z "$OUTLOG" ] && OUTLOG="${DIR_PREFIX}${CMD_BASE}.out"
 [ -z "$ERRLOG" ] && ERRLOG="${DIR_PREFIX}${CMD_BASE}.err"
 
-($SCRIPT | tee $OUTLOG) 3>&1 1>&2 2>&3 | tee $ERRLOG
+("${CMD_ARGS[@]}" | tee $OUTLOG) 3>&1 1>&2 2>&3 | tee $ERRLOG
