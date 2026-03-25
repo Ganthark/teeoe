@@ -1,49 +1,51 @@
 #!/bin/bash
 print_usage() {
-  printf '\nUsage: %s: [OPTION] script\n' $0
+  printf '\nUsage: %s: [OPTION] script [script arguments...]\n' $0
   echo "A script must be provided."
   echo "OPTIONS:"
   echo "        -e      Filename for the stderr redirection (default: ./<cmd>.err)"
   echo "        -o      Filename for the stdout redirection (default: ./<cmd>.out)"
   echo "        -l      Directory to write log files into (default: current directory)"
+  echo "        -c      Log the full command at the top of the output file"
 }
 
-SCRIPT=false
 ERRLOG=""
 OUTLOG=""
 LOGDIR=""
+LOG_CMD=false
 
-
-while getopts ':e:o:l:' flag; do
+while getopts ':e:o:l:c' flag; do
   case "${flag}" in
     e) ERRLOG=${OPTARG} ;;
     o) OUTLOG=${OPTARG} ;;
     l) LOGDIR=${OPTARG} ;;
+    c) LOG_CMD=true ;;
     ?) print_usage
        exit 1 ;;
   esac
 done
 
-if [ "$#" -lt 1 ]
-then
+if [ "$#" -lt 1 ]; then
     echo "Illegal number of parameters."
     print_usage
     exit 1
 fi
 shift $((OPTIND-1))
-if [ "$#" -lt 1 ]
-then
+if [ "$#" -lt 1 ]; then
     echo "Missing script parameter."
     print_usage
     exit 1
 fi
+
+# Store all remaining arguments as an array — this preserves quoting and
+# spaces within arguments (e.g. --title "my long title" stays intact).
 CMD_ARGS=("$@")
 
-# Derive base name from command: ./scripts/example.sh -> example, grep -> grep
+# Derive base name from command: ./scripts/example.sh -> example
 CMD_BASE=$(basename "$1")
 CMD_BASE="${CMD_BASE%.*}"
 
-# Resolve directory prefix
+# Resolve log directory
 if [ -n "$LOGDIR" ]; then
   mkdir -p "$LOGDIR" || { echo "Cannot create log directory: $LOGDIR"; exit 1; }
   DIR_PREFIX="${LOGDIR%/}/"
@@ -51,8 +53,22 @@ else
   DIR_PREFIX="./"
 fi
 
-# Only apply defaults if -e/-o were not explicitly set
 [ -z "$OUTLOG" ] && OUTLOG="${DIR_PREFIX}${CMD_BASE}.out"
 [ -z "$ERRLOG" ] && ERRLOG="${DIR_PREFIX}${CMD_BASE}.err"
 
-("${CMD_ARGS[@]}" | tee $OUTLOG) 3>&1 1>&2 2>&3 | tee $ERRLOG
+# Prepend the command to the output file if -c was set
+if [ "$LOG_CMD" = true ]; then
+  CMD_STR=""
+  for arg in "${CMD_ARGS[@]}"; do
+    if [[ "$arg" == *" "* ]]; then
+      CMD_STR+="\"$arg\" "   # wrap arguments containing spaces in double quotes
+    else
+      CMD_STR+="$arg "
+    fi
+  done
+  printf '## Command: %s\n## Date: %s\n\n' \
+    "${CMD_STR% }" "$(date '+%Y-%m-%d %H:%M:%S')" > "$OUTLOG"
+fi
+
+# Execute with the array — quoting of individual arguments is fully preserved
+("${CMD_ARGS[@]}" | tee -a "$OUTLOG") 3>&1 1>&2 2>&3 | tee "$ERRLOG"
